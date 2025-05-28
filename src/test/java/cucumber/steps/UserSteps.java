@@ -1,18 +1,14 @@
 package cucumber.steps;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cucumber.context.TestContext;
-import io.cucumber.java.en.And;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
+import cucumber.dto.UserRequest;
+import io.cucumber.java.en.*;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import cucumber.dto.LoginResponse;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -22,6 +18,7 @@ public class UserSteps {
 
     private final TestContext context;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private UserRequest request;
 
     public UserSteps(TestContext context) {
         this.context = context;
@@ -29,10 +26,13 @@ public class UserSteps {
 
     @Given("I prepare a user registration with email {string} and password {string}")
     public void i_prepare_a_user_registration(String email, String password) {
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("email", email);
-        requestBody.put("password", password);
-        context.setRequestBody(requestBody);
+        request = new UserRequest();
+        request.setEmail(email);
+        request.setPassword(password);
+        request.setFull_name("Baba QA " + UUID.randomUUID());
+        request.setDepartment("Technology");
+        request.setPhone_number("081234567890");
+        context.setRequestBody(request);
     }
 
     @Given("I have registered user {string} with password {string}")
@@ -54,8 +54,9 @@ public class UserSteps {
                 .extract()
                 .response();
 
-        System.out.println("@@@@@@@@ FULL URL = " + context.getBaseUrl() + path);
-        System.out.println("@@@@@@@@ RESPONSE BODY = " + response.getBody().asString());
+        System.out.println("@@@@@@ FULL URL = " + context.getBaseUrl() + path);
+        System.out.println("@@@@@@ REQUEST BODY = " + context.getRequestBody());
+        System.out.println("@@@@@@ RESPONSE BODY = " + response.getBody().asString());
         context.setLastResponse(response);
     }
 
@@ -64,17 +65,16 @@ public class UserSteps {
         assertThat(context.getLastResponse().getStatusCode(), is(expectedStatusCode));
     }
 
-    @And("the response should contain email {string}")
-    public void the_response_should_contain_email(String expectedEmail) throws IOException {
-        JsonNode root = objectMapper.readTree(context.getLastResponse().getBody().asString());
-        assertThat(root.path("email").asText(), equalTo(expectedEmail));
+    @Then("the response should contain email {string}")
+    public void the_response_should_contain_email(String expectedEmail) {
+        String actualEmail = context.getLastResponse().jsonPath().getString("email");
+        assertThat(actualEmail, equalTo(expectedEmail));
     }
 
     @Then("the response should contain a valid token")
-    public void the_response_should_contain_a_valid_token() throws IOException {
-        JsonNode root = objectMapper.readTree(context.getLastResponse().getBody().asString());
-        String token = root.path("token").asText();
-        assertThat(token, not(isEmptyOrNullString()));
-        context.setToken(token);
+    public void the_response_should_contain_a_valid_token() {
+        LoginResponse loginResponse = context.getLastResponse().as(LoginResponse.class);
+        assertThat(loginResponse.getToken(), not(emptyOrNullString()));
+        context.setToken(loginResponse.getToken());
     }
 }
