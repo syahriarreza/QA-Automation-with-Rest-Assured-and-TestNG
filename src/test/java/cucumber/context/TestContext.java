@@ -7,7 +7,6 @@ public class TestContext {
     private String objectId;
     private Object requestBody;
     private Response lastResponse;
-    private final String baseUrl = "https://whitesmokehouse.com";
 
     public String getToken() {
         return token;
@@ -43,9 +42,5 @@ public class TestContext {
 
     public Response getResponse() {
         return getLastResponse();
-    }
-
-    public String getBaseUrl() {
-        return baseUrl;
     }
 }

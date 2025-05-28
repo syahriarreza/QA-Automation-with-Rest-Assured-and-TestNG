@@ -46,7 +46,8 @@ public class ObjectSteps {
                 .header("Content-Type", "application/json")
                 .body(objectRequest)
                 .when()
-                .put("/webhook/api/objects/" + testContext.getObjectId())
+                .put("/webhook/37777abe-a5ef-4570-a383-c99b5f5f7906/api/objects/"
+                        + testContext.getObjectId())
                 .then()
                 .extract()
                 .response();
@@ -61,7 +62,8 @@ public class ObjectSteps {
         Response response = given()
                 .header("Authorization", "Bearer " + token)
                 .when()
-                .delete("/webhook/api/objects/" + testContext.getObjectId())
+                .delete("/webhook/d79a30ed-1066-48b6-83f5-556120afc46f/api/objects/"
+                        + testContext.getObjectId())
                 .then()
                 .extract()
                 .response();

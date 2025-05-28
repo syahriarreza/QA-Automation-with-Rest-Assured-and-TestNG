@@ -3,6 +3,7 @@ package cucumber.hooks;
 import cucumber.context.TestContext;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
+import io.restassured.RestAssured;
 
 public class Hooks {
 

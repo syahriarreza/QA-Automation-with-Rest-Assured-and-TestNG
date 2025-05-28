@@ -1,7 +1,9 @@
 Feature: Object API - Create, Update, and Delete
 
   Scenario: Create, Update, and Delete an object
-    Given I prepare a new object with name "Laptop QA"
+    Given I am logged in as a valid user with email "baba.2@example.com" and password "@dmin123"
+    And I have a valid authentication token
+    And I prepare a new object with name "Laptop QA"
     When I send a POST request to "/webhook/api/objects"
     Then the response status should be 200
     And I save the object ID

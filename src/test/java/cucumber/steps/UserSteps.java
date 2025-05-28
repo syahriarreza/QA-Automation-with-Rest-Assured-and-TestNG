@@ -6,6 +6,7 @@ import cucumber.dto.UserRequest;
 import io.cucumber.java.en.*;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import cucumber.dto.LoginResponse;
 
 import java.util.UUID;
@@ -54,29 +55,36 @@ public class UserSteps {
         Object body = context.getRequestBody();
         String token = context.getToken();
 
-        Response response = given()
+        RequestSpecification resSpec = given();
+
+        if (token != null) {
+            resSpec.header("Authorization", "Bearer " + token);
+        }
+
+        Response response = resSpec
                 .contentType(ContentType.JSON)
                 .body(body)
                 .when()
-                .post(context.getBaseUrl() + path)
+                .post(path)
                 .then()
                 .extract()
                 .response();
 
-        if (token != null) {
-            response.then().header("Authorization", not(emptyOrNullString()));
-        }
-
-        System.out.println("@@@@@@ FULL URL = " + context.getBaseUrl() + path);
-        System.out.println("@@@@@@ TOKEN = " + token);
-        System.out.println("@@@@@@ REQUEST BODY = " + context.getRequestBody());
-        System.out.println("@@@@@@ RESPONSE BODY = " + response.getBody().asString());
+        System.out.println("\t@@@@@@ POST URL = " + path);
+        System.out.println("\t@@@@@@ TOKEN = " + token);
+        System.out.println("\t@@@@@@ REQUEST BODY = " + context.getRequestBody());
+        System.out.println("\t@@@@@@ RESPONSE BODY = " + response.getBody().asString());
         context.setLastResponse(response);
     }
 
     @Then("the response status should be {int}")
     public void the_response_status_should_be(int expectedStatusCode) {
-        assertThat(context.getLastResponse().getStatusCode(), is(expectedStatusCode));
+        try {
+            assertThat(context.getLastResponse().getStatusCode(), is(expectedStatusCode));
+        } catch (AssertionError e) {
+            System.out.println("\\t@@ ERROOOOOOR Response Body: " + context.getLastResponse().getBody().asString());
+            throw e;
+        }
     }
 
     @Then("the response should contain email {string}")
@@ -90,5 +98,31 @@ public class UserSteps {
         LoginResponse loginResponse = context.getLastResponse().as(LoginResponse.class);
         assertThat(loginResponse.getToken(), not(emptyOrNullString()));
         context.setToken(loginResponse.getToken());
+    }
+
+    @Given("I am logged in as a valid user with email {string} and password {string}")
+    public void i_am_logged_in_as_a_valid_user_with_email_and_password(String email, String password) {
+        UserRequest loginRequest = new UserRequest();
+        loginRequest.setEmail(email);
+        loginRequest.setPassword(password);
+
+        Response response = given()
+                .contentType("application/json")
+                .body(loginRequest)
+                .when()
+                .post("/webhook/api/login");
+
+        assertThat("Login should be successful", response.getStatusCode(), equalTo(200));
+
+        String token = response.jsonPath().getString("token");
+        assertThat("Token should not be null", token, not(emptyOrNullString()));
+
+        context.setToken(token);
+    }
+
+    @And("I have a valid authentication token")
+    public void i_have_a_valid_authentication_token() {
+        String token = context.getToken();
+        assertThat("Authentication token should not be null or empty", token, not(emptyOrNullString()));
     }
 }
