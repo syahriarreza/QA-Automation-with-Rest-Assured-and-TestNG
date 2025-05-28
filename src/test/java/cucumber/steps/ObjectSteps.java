@@ -1,72 +1,75 @@
 package cucumber.steps;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import cucumber.context.TestContext;
 import io.cucumber.java.en.*;
 import io.restassured.response.Response;
+import lombok.RequiredArgsConstructor;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.restassured.RestAssured.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static io.restassured.RestAssured.given;
+import static org.testng.Assert.assertNotNull;
 
+@RequiredArgsConstructor
 public class ObjectSteps {
 
-    private Map<String, Object> objectData = new HashMap<>();
+    private final TestContext testContext;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private Map<String, Object> objectPayload = new HashMap<>();
     private String objectId;
-    private Response response;
 
     @Given("I prepare a new object with name {string}")
-    public void i_prepare_a_new_object(String name) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("year", 2024);
-        data.put("price", 1999.99);
-        data.put("cpu_model", "Intel Core i9");
-        data.put("hard_disk_size", "1 TB");
-        data.put("capacity", "16 GB");
-        data.put("screen_size", "16 Inch");
-        data.put("color", "silver");
-
-        objectData.put("name", name);
-        objectData.put("data", data);
+    public void i_prepare_a_new_object(String objectName) {
+        objectPayload.clear();
+        objectPayload.put("name", objectName);
     }
 
-    // @When("I send a POST request to {string}")
-    // public void i_send_post_to(String endpoint) {
-    // response = given()
-    // .header("Content-Type", "application/json")
-    // .body(objectData)
-    // .when()
-    // .post(endpoint);
-    // }
-
-    @Then("I save the object ID")
+    @And("I save the object ID")
     public void i_save_the_object_id() {
-        objectId = response.jsonPath().getString("id");
-        assertThat(objectId, not(emptyOrNullString()));
+        Response response = testContext.getResponse();
+        JsonNode jsonNode;
+        try {
+            jsonNode = objectMapper.readTree(response.getBody().asString());
+            objectId = jsonNode.get("data").get("id").asText();
+            testContext.setObjectId(objectId);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to parse response to get object ID", e);
+        }
+        assertNotNull(objectId, "Object ID should not be null");
     }
 
     @When("I update the object name to {string}")
     public void i_update_the_object(String newName) {
-        objectData.put("name", newName);
-
-        response = given()
+        objectPayload.put("name", newName);
+        String token = testContext.getToken();
+        String id = testContext.getObjectId();
+        Response response = given()
+                .header("Authorization", "Bearer " + token)
                 .header("Content-Type", "application/json")
-                .body(objectData)
+                .body(objectPayload)
                 .when()
-                .put("/webhook/api/objects/" + objectId);
+                .put("/webhook/api/objects/" + id)
+                .then()
+                .extract()
+                .response();
+        testContext.setLastResponse(response);
     }
 
     @When("I delete the object")
     public void i_delete_the_object() {
-        response = given()
-                .header("Content-Type", "application/json")
+        String token = testContext.getToken();
+        String id = testContext.getObjectId();
+        Response response = given()
+                .header("Authorization", "Bearer " + token)
                 .when()
-                .delete("/webhook/api/objects/" + objectId);
+                .delete("/webhook/api/objects/" + id)
+                .then()
+                .extract()
+                .response();
+        testContext.setLastResponse(response);
     }
-
-    // @Then("the response status should be {int}")
-    // public void the_response_status_should_be(int expectedStatusCode) {
-    // response.then().statusCode(expectedStatusCode);
-    // }
 }
