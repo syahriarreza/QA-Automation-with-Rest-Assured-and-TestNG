@@ -34,6 +34,9 @@ public class UserSteps {
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(user);
 
+        System.out.println("############## POST URL: " + baseURI + endpoint);
+        System.out.println("############## POST BODY: " + json.format(json, null));
+
         response = given()
                 .header("Content-Type", "application/json")
                 .body(json)
@@ -43,6 +46,7 @@ public class UserSteps {
 
     @Then("the response status should be {int}")
     public void the_response_status_should_be(int expectedStatusCode) {
+        System.out.println("############## Response Body: " + response.getBody().asString());
         response.then().statusCode(expectedStatusCode);
     }
 
