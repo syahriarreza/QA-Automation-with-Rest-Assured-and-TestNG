@@ -26,6 +26,13 @@ public class UserSteps {
 
     @Given("I prepare a user registration with email {string} and password {string}")
     public void i_prepare_a_user_registration(String email, String password) {
+        // email.split("@");
+        // String[] parts = email.split("@");
+        // String username = parts[0];
+        // String domain = parts[1];
+        // username = username + "_" + UUID.randomUUID();
+        // email = username + "@" + domain;
+
         request = new UserRequest();
         request.setEmail(email);
         request.setPassword(password);
@@ -45,6 +52,8 @@ public class UserSteps {
     @When("I send a POST request to {string}")
     public void i_send_post_request(String path) {
         Object body = context.getRequestBody();
+        String token = context.getToken();
+
         Response response = given()
                 .contentType(ContentType.JSON)
                 .body(body)
@@ -54,7 +63,12 @@ public class UserSteps {
                 .extract()
                 .response();
 
+        if (token != null) {
+            response.then().header("Authorization", not(emptyOrNullString()));
+        }
+
         System.out.println("@@@@@@ FULL URL = " + context.getBaseUrl() + path);
+        System.out.println("@@@@@@ TOKEN = " + token);
         System.out.println("@@@@@@ REQUEST BODY = " + context.getRequestBody());
         System.out.println("@@@@@@ RESPONSE BODY = " + response.getBody().asString());
         context.setLastResponse(response);
