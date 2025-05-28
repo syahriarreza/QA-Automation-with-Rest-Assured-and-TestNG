@@ -3,6 +3,7 @@ package cucumber.runner;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 import io.restassured.RestAssured;
+import cucumber.helpers.ConfigManager;
 import cucumber.helpers.GenerateReport;
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
@@ -19,7 +20,7 @@ import io.cucumber.testng.CucumberOptions;
 public class TestRunner extends AbstractTestNGCucumberTests {
         @BeforeSuite
         public void before_suite() {
-                RestAssured.baseURI = "https://whitesmokehouse.com";
+                RestAssured.baseURI = ConfigManager.getBaseUrl();
         }
 
         @AfterSuite

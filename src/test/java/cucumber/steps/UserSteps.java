@@ -1,6 +1,8 @@
 package cucumber.steps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import cucumber.client.Endpoints;
 import cucumber.context.TestContext;
 import cucumber.dto.UserRequest;
 import io.cucumber.java.en.*;
@@ -46,8 +48,14 @@ public class UserSteps {
     @Given("I have registered user {string} with password {string}")
     public void i_have_registered_user(String email, String password) {
         i_prepare_a_user_registration(email, password);
-        i_send_post_request("/webhook/api/register");
+        i_register_the_user();
         the_response_status_should_be(200);
+    }
+
+    @When("I register the user")
+    public void i_register_the_user() {
+        Response response = Endpoints.register((UserRequest) context.getRequestBody());
+        context.setLastResponse(response);
     }
 
     @When("I send a POST request to {string}")
@@ -106,12 +114,7 @@ public class UserSteps {
         loginRequest.setEmail(email);
         loginRequest.setPassword(password);
 
-        Response response = given()
-                .contentType("application/json")
-                .body(loginRequest)
-                .when()
-                .post("/webhook/api/login");
-
+        Response response = Endpoints.login(loginRequest);
         assertThat("Login should be successful", response.getStatusCode(), equalTo(200));
 
         String token = response.jsonPath().getString("token");
@@ -124,5 +127,12 @@ public class UserSteps {
     public void i_have_a_valid_authentication_token() {
         String token = context.getToken();
         assertThat("Authentication token should not be null or empty", token, not(emptyOrNullString()));
+    }
+
+    @When("I login")
+    public void i_login() {
+        UserRequest loginRequest = (UserRequest) context.getRequestBody();
+        Response response = Endpoints.login(loginRequest);
+        context.setLastResponse(response);
     }
 }

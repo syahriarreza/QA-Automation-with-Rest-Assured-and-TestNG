@@ -39,8 +39,4 @@ public class TestContext {
     public void setLastResponse(Response lastResponse) {
         this.lastResponse = lastResponse;
     }
-
-    public Response getResponse() {
-        return getLastResponse();
-    }
 }

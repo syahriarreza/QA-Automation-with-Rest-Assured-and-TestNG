@@ -12,6 +12,7 @@ import java.util.UUID;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import cucumber.client.Endpoints;
 
 @RequiredArgsConstructor
 public class ObjectSteps {
@@ -25,13 +26,21 @@ public class ObjectSteps {
     public void i_prepare_a_new_object(String objectName) {
         objectRequest = new ObjectRequest();
         objectRequest.setName(objectName + " " + UUID.randomUUID());
+        objectRequest.setData(new ObjectRequest.Data());
+        objectRequest.getData().setYear(2024);
+        objectRequest.getData().setPrice(1000.0);
+        objectRequest.getData().setCpu_model("Intel Core i7");
+        objectRequest.getData().setHard_disk_size("1 TB");
+        objectRequest.getData().setCapacity("16 GB");
+        objectRequest.getData().setScreen_size("15.6 inches");
+        objectRequest.getData().setColor("Silver");
         testContext.setRequestBody(objectRequest);
     }
 
     @And("I save the object ID")
     public void i_save_the_object_id() {
-        Response response = testContext.getResponse();
-        objectId = response.jsonPath().getString("data.id");
+        Response response = testContext.getLastResponse();
+        objectId = response.jsonPath().getString("id");
         assertThat("Object ID should not be null", objectId, not(emptyOrNullString()));
         testContext.setObjectId(objectId);
     }
@@ -40,39 +49,22 @@ public class ObjectSteps {
     public void i_update_the_object(String newName) {
         objectRequest.setName(newName);
         String token = testContext.getToken();
-
-        Response response = given()
-                .header("Authorization", "Bearer " + token)
-                .header("Content-Type", "application/json")
-                .body(objectRequest)
-                .when()
-                .put("/webhook/37777abe-a5ef-4570-a383-c99b5f5f7906/api/objects/"
-                        + testContext.getObjectId())
-                .then()
-                .extract()
-                .response();
-
+        Response response = Endpoints.updateObject(objectRequest, token, testContext.getObjectId());
         testContext.setLastResponse(response);
     }
 
     @When("I delete the object")
     public void i_delete_the_object() {
         String token = testContext.getToken();
-
-        Response response = given()
-                .header("Authorization", "Bearer " + token)
-                .when()
-                .delete("/webhook/d79a30ed-1066-48b6-83f5-556120afc46f/api/objects/"
-                        + testContext.getObjectId())
-                .then()
-                .extract()
-                .response();
-
+        Response response = Endpoints.deleteObject(token, testContext.getObjectId());
         testContext.setLastResponse(response);
     }
 
-    // @Then("the response status should be {int}")
-    // public void the_response_status_should_be(int statusCode) {
-    // testContext.getLastResponse().then().statusCode(statusCode);
-    // }
+    @When("I add the object")
+    public void i_add_the_object() {
+        ObjectRequest objectRequest = (ObjectRequest) testContext.getRequestBody();
+        String token = testContext.getToken();
+        Response response = Endpoints.createObject(objectRequest, token);
+        testContext.setLastResponse(response);
+    }
 }
