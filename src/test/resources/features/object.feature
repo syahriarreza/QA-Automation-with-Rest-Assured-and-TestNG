@@ -1,7 +1,7 @@
 Feature: Object API - Create, Update, and Delete
 
   Scenario: Create, Update, and Delete an object
-    Given I am logged in as a valid user with email "baba.2@example.com" and password "@dmin123"
+    Given I am logged in as a valid user with email "syahriar.reza.001@gmail.com" and password "@dmin123"
     And I have a valid authentication token
     And I prepare a new object with name "Laptop QA"
     When I add the object

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import cucumber.client.Endpoints;
 import cucumber.context.TestContext;
 import cucumber.dto.UserRequest;
+import cucumber.helpers.ConfigManager;
 import io.cucumber.java.en.*;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -28,26 +29,22 @@ public class UserSteps {
     }
 
     @Given("I prepare a user registration with email {string} and password {string}")
-    public void i_prepare_a_user_registration(String email, String password) {
-        // email.split("@");
-        // String[] parts = email.split("@");
-        // String username = parts[0];
-        // String domain = parts[1];
-        // username = username + "_" + UUID.randomUUID();
-        // email = username + "@" + domain;
+    public void i_prepare_a_user_registration(String emailKey, String passwordKey) {
+        String email = ConfigManager.get(emailKey) != "" ? ConfigManager.get(emailKey) : emailKey;
+        String password = ConfigManager.get(passwordKey) != "" ? ConfigManager.get(passwordKey) : passwordKey;
 
         request = new UserRequest();
         request.setEmail(email);
         request.setPassword(password);
-        request.setFull_name("Baba QA " + UUID.randomUUID());
+        request.setFull_name("REZA QA " + UUID.randomUUID());
         request.setDepartment("Technology");
         request.setPhone_number("081234567890");
         context.setRequestBody(request);
     }
 
     @Given("I have registered user {string} with password {string}")
-    public void i_have_registered_user(String email, String password) {
-        i_prepare_a_user_registration(email, password);
+    public void i_have_registered_user(String emailKey, String passwordKey) {
+        i_prepare_a_user_registration(emailKey, passwordKey);
         i_register_the_user();
         the_response_status_should_be(200);
     }
@@ -90,15 +87,23 @@ public class UserSteps {
         try {
             assertThat(context.getLastResponse().getStatusCode(), is(expectedStatusCode));
         } catch (AssertionError e) {
-            System.out.println("\\t@@ ERROOOOOOR Response Body: " + context.getLastResponse().getBody().asString());
+            System.out.println("\\t@@@@@@ ERROOOOOOR Response Body: " + context.getLastResponse().getBody().asString());
             throw e;
         }
     }
 
     @Then("the response should contain email {string}")
-    public void the_response_should_contain_email(String expectedEmail) {
+    public void the_response_should_contain_email(String expectedEmailKey) {
+        String expectedEmail = ConfigManager.get(expectedEmailKey) != "" ? ConfigManager.get(expectedEmailKey)
+                : expectedEmailKey;
+
         String actualEmail = context.getLastResponse().jsonPath().getString("email");
-        assertThat(actualEmail, equalTo(expectedEmail));
+        try {
+            assertThat(actualEmail, equalTo(expectedEmail));
+        } catch (AssertionError e) {
+            System.out.println("\\t@@@@@@ ERROOOOOOR Response Body: " + context.getLastResponse().getBody().asString());
+            throw e;
+        }
     }
 
     @Then("the response should contain a valid token")
@@ -109,17 +114,35 @@ public class UserSteps {
     }
 
     @Given("I am logged in as a valid user with email {string} and password {string}")
-    public void i_am_logged_in_as_a_valid_user_with_email_and_password(String email, String password) {
+    public void i_am_logged_in_as_a_valid_user_with_email_and_password(String emailKey, String passwordKey) {
+        String email = ConfigManager.get(emailKey) != "" && ConfigManager.get(emailKey) != null
+                ? ConfigManager.get(emailKey)
+                : emailKey;
+        String password = ConfigManager.get(passwordKey) != "" && ConfigManager.get(passwordKey) != null
+                ? ConfigManager.get(passwordKey)
+                : passwordKey;
+
         UserRequest loginRequest = new UserRequest();
         loginRequest.setEmail(email);
         loginRequest.setPassword(password);
 
         Response response = Endpoints.login(loginRequest);
-        assertThat("Login should be successful", response.getStatusCode(), equalTo(200));
+        try {
+            assertThat("Login should be successful", response.getStatusCode(), equalTo(200));
+        } catch (AssertionError e) {
+            System.out.println("\t@@@@@@ ERROOOOOOR Response Body: " + response.getBody().asString());
+            System.out.println("\t@@@@@@ REQUEST BODY = " + loginRequest.toString());
+            throw e;
+        }
 
         String token = response.jsonPath().getString("token");
-        assertThat("Token should not be null", token, not(emptyOrNullString()));
-
+        try {
+            assertThat("Token should not be null", token, not(emptyOrNullString()));
+        } catch (AssertionError e) {
+            System.out.println("\t@@@@@@ ERROOOOOOR Response Body: " + response.getBody().asString());
+            System.out.println("\t@@@@@@ REQUEST BODY = " + loginRequest.toString());
+            throw e;
+        }
         context.setToken(token);
     }
 
